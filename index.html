@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="theme-color" content="#007aff">
+<title>Lake Side Detailing</title>
+<style>
+  :root { --blue:#3b76f6; --red:#e74c3c; --orange:#ed9b40; }
+  * { box-sizing:border-box; margin:0; padding:0; font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif; }
+  body { background:#fff; max-width:420px; margin:0 auto; padding:24px 16px 60px; }
+  h1 { color:var(--blue); font-size:28px; font-weight:800; margin-bottom:12px; }
+  .boat-logo { text-align:center; font-size:40px; margin:10px 0 20px; }
+  input, select { width:100%; padding:14px; margin:8px 0; border:1px solid #ccc; border-radius:10px; font-size:16px; background:#fafbff; }
+  button { width:100%; padding:15px; margin:8px 0; border:none; border-radius:10px; font-size:17px; font-weight:700; color:#fff; background:var(--blue); cursor:pointer; }
+  button.red { background:var(--red); } button.orange { background:var(--orange); }
+  button.grey { background:#f2f2f2; color:#111; border:1px solid #ccc; }
+  .page { display:none; } .page.active { display:block; }
+  .svc-item { background:#f2f3f5; border-radius:10px; padding:14px; margin:10px 0; font-size:15px; }
+  label.chk { display:flex; align-items:center; gap:10px; margin:12px 0; font-size:16px; font-weight:600; }
+  label.chk input { width:22px; height:22px; margin:0; }
+  label.chk .price { color:#888; font-weight:400; }
+  .quote { color:var(--blue); font-size:22px; font-weight:800; margin:14px 0; }
+  .totals { font-size:18px; font-weight:700; margin:14px 0; line-height:1.6; }
+  .totals .grand { color:var(--blue); }
+  h2 { color:var(--blue); font-size:24px; font-weight:800; margin:8px 0 12px; }
+  #toast { position:fixed; bottom:16px; left:50%; transform:translateX(-50%); background:#222; color:#fff; padding:12px 20px; border-radius:10px; font-size:14px; display:none; z-index:99; max-width:90%; text-align:center; }
+  .rep-bar { font-size:13px; color:#666; text-align:right; margin-bottom:6px; }
+  .rep-bar a { color:var(--blue); cursor:pointer; }
+  .badge { font-size:12px; padding:2px 8px; border-radius:8px; background:#e8f0fe; color:var(--blue); }
+</style>
+</head>
+<body>
+
+<div id="toast"></div>
+<div class="rep-bar">Rep: <span id="repName">—</span> · <a onclick="setRep()">change</a> <span class="badge" id="netBadge"></span></div>
+
+<!-- PAGE 1: CONTACT -->
+<div class="page active" id="contactPage">
+  <h1>Contact Info</h1>
+  <div class="boat-logo">🚤</div>
+  <input id="firstName" placeholder="First Name">
+  <input id="lastName" placeholder="Last Name">
+  <input id="phone" placeholder="Phone" type="tel">
+  <input id="email" placeholder="Email" type="email">
+  <input id="address" placeholder="Address">
+  <button onclick="goServices()">Next</button>
+  <button onclick="saveVcard()">Save Contact</button>
+  <button class="red" onclick="resetAll()">Reset</button>
+</div>
+
+<!-- PAGE 2: SERVICE SUMMARY -->
+<div class="page" id="servicePage">
+  <h2>Service Summary</h2>
+  <button onclick="openTypePicker()">Add Service</button>
+  <div id="serviceList"></div>
+  <button class="grey" onclick="show('contactPage')">Back</button>
+  <button onclick="renderReceipt();show('receiptPage')">Next</button>
+</div>
+
+<!-- PAGE 3: TYPE PICKER -->
+<div class="page" id="typePage">
+  <h2>Select Service Type</h2>
+  <button onclick="startCar()">Car</button>
+  <button onclick="startBoat()">Boat</button>
+  <button onclick="startOther()">Other</button>
+  <button class="grey" onclick="show('servicePage')">Cancel</button>
+</div>
+
+<!-- PAGE 4a: CAR SUBTYPE -->
+<div class="page" id="carSubPage">
+  <h2>Car Service</h2>
+  <div id="carSubBtns"></div>
+  <button class="grey" onclick="show('typePage')">Cancel</button>
+</div>
+
+<!-- PAGE 4b: CAR OPTIONS -->
+<div class="page" id="carOptPage">
+  <h2>Car Options: <span id="carSubLabel"></span></h2>
+  <div class="quote" id="carQuote"></div>
+  <label class="chk"><input type="checkbox" id="carInt" onchange="updateCarQuote()"> Interior</label>
+  <label class="chk"><input type="checkbox" id="carExt" onchange="updateCarQuote()"> Exterior</label>
+  <b>Add-ons:</b>
+  <div id="carAddons"></div>
+  <button onclick="addCarService()">Add Car Service</button>
+  <button class="grey" onclick="show('carSubPage')">Cancel</button>
+</div>
+
+<!-- PAGE 4c: BOAT -->
+<div class="page" id="boatPage">
+  <h2>Boat Service</h2>
+  <input id="boatLen" type="number" placeholder="Boat length (ft)" oninput="updateBoatQuote()">
+  <label class="chk"><input type="checkbox" id="boatInt" onchange="updateBoatQuote()"> Interior</label>
+  <label class="chk"><input type="checkbox" id="boatExt" onchange="updateBoatQuote()"> Exterior</label>
+  <label class="chk"><input type="checkbox" id="boatPol" onchange="updateBoatQuote()"> Polish</label>
+  <b>Add-ons:</b>
+  <div id="boatAddons"></div>
+  <div class="quote" id="boatQuote"></div>
+  <button onclick="addBoatService()">Add Boat Service</button>
+  <button class="grey" onclick="show('typePage')">Cancel</button>
+</div>
+
+<!-- PAGE 4d: OTHER -->
+<div class="page" id="otherPage">
+  <h2>Other Service</h2>
+  <input id="otherDesc" placeholder="Describe the service">
+  <input id="otherPrice" type="number" placeholder="Price ($)">
+  <button onclick="addOtherService()">Add Other Service</button>
+  <button class="grey" onclick="show('typePage')">Cancel</button>
+</div>
+
+<!-- PAGE 5: RECEIPT -->
+<div class="page" id="receiptPage">
+  <h2>Receipt</h2>
+  <div id="receiptList"></div>
+  <div class="totals" id="receiptTotals"></div>
+  <button class="orange" onclick="addDiscount()">Add Discount</button>
+  <button class="grey" onclick="show('servicePage')">Back</button>
+  <button onclick="saveQuote(null)">Save Quote</button>
+  <button onclick="scheduleQuote()">Schedule</button>
+</div>
+
+<script>
+/* ================= PRICING ENGINE (replicated from original app) ================= */
+/* Official pricing set by Charlie 8/11/2026 */
+const CAR_PRICES = {"Coupe":{"Interior":189,"Exterior":189,"FullDetail":229},"Sedan":{"Interior":189,"Exterior":189,"FullDetail":249},"Small SUV":{"Interior":189,"Exterior":189,"FullDetail":279},"SUV":{"Interior":189,"Exterior":189,"FullDetail":299},"Small Truck":{"Interior":189,"Exterior":189,"FullDetail":299},"Truck":{"Interior":189,"Exterior":189,"FullDetail":349},"Van":{"Interior":189,"Exterior":189,"FullDetail":349}};
+const CAR_ADDONS = {"Under Carriage":50,"Leather Conditioner":50,"Pet Hair":50,"Carpet/Seat Extraction":100,"Stain Removal":50,"Polish":150};
+const BOAT_ADDONS = {"Leather Conditioner":50,"Chrome Polish":75,"Stain Removal":50,"Pet Hair":50};
+const BOAT_PRICE_RATES = {"exterior":20,"interior":20,"exterior+interior":25,"exterior+polish":34,"exterior+interior+polish":34};
+function getBoatPricePerFoot(i,e,p){ if(e&&i&&p) return BOAT_PRICE_RATES['exterior+interior+polish']; if(e&&p) return BOAT_PRICE_RATES['exterior+polish']; if(e&&i) return BOAT_PRICE_RATES['exterior+interior']; if(e) return BOAT_PRICE_RATES['exterior']; if(i) return BOAT_PRICE_RATES['interior']; return 0; }
+
+/* ================= SUPABASE ================= */
+const SB_URL = "https://rduciwvhjhmnlgpjuqnx.supabase.co";
+const SB_KEY = "sb_publishable_yFrlKZFZlL81uReddZ8pUQ_Ahjlwu1M";
+async function sbInsert(table, row){
+  const res = await fetch(`${SB_URL}/rest/v1/${table}`, {
+    method:"POST",
+    headers:{ "apikey":SB_KEY, "Authorization":"Bearer "+SB_KEY, "Content-Type":"application/json", "Prefer":"return=minimal" },
+    body: JSON.stringify(row)
+  });
+  if(!res.ok) throw new Error(table+" insert failed: "+res.status+" "+await res.text());
+}
+
+/* ================= STATE ================= */
+let services = [];
+let discountPct = 0;
+let carSub = null;
+
+function show(id){ document.querySelectorAll('.page').forEach(p=>p.classList.remove('active')); document.getElementById(id).classList.add('active'); window.scrollTo(0,0); }
+function toast(msg, ms=2600){ const t=document.getElementById('toast'); t.textContent=msg; t.style.display='block'; clearTimeout(t._h); t._h=setTimeout(()=>t.style.display='none', ms); }
+const $ = id => document.getElementById(id);
+const val = id => $(id).value.trim();
+
+/* rep name (persisted) */
+function setRep(){ const r = prompt("Rep name:", localStorage.getItem('lsd_rep')||""); if(r){ localStorage.setItem('lsd_rep', r.trim()); $('repName').textContent = r.trim(); } }
+$('repName').textContent = localStorage.getItem('lsd_rep') || '—';
+if(!localStorage.getItem('lsd_rep')) setTimeout(setRep, 600);
+
+/* ================= NAV / SERVICES ================= */
+function goServices(){ if(!val('firstName')){ toast("First name required"); return; } renderServices(); show('servicePage'); }
+function openTypePicker(){ show('typePage'); }
+
+function startCar(){
+  const wrap = $('carSubBtns'); wrap.innerHTML='';
+  Object.keys(CAR_PRICES).forEach(sub=>{ const b=document.createElement('button'); b.textContent=sub; b.onclick=()=>{ carSub=sub; openCarOptions(); }; wrap.appendChild(b); });
+  show('carSubPage');
+}
+function openCarOptions(){
+  $('carSubLabel').textContent = carSub;
+  $('carInt').checked = false; $('carExt').checked = false;
+  const wrap = $('carAddons'); wrap.innerHTML='';
+  Object.entries(CAR_ADDONS).forEach(([name,price])=>{
+    const l=document.createElement('label'); l.className='chk';
+    l.innerHTML = `<input type="checkbox" data-addon="${name}" data-price="${price}" onchange="updateCarQuote()"> ${name} <span class="price">$${price}</span>`;
+    wrap.appendChild(l);
+  });
+  updateCarQuote(); show('carOptPage');
+}
+function carCurrent(){
+  const i=$('carInt').checked, e=$('carExt').checked;
+  const detail = i&&e ? 'FullDetail' : i ? 'Interior' : e ? 'Exterior' : null;
+  const base = detail ? CAR_PRICES[carSub][detail] : 0;
+  const addons = [...document.querySelectorAll('#carAddons input:checked')].map(c=>({name:c.dataset.addon, price:+c.dataset.price}));
+  const addonsTotal = addons.reduce((s,a)=>s+a.price,0);
+  return {detail, base, addons, total: base+addonsTotal};
+}
+function updateCarQuote(){
+  const c = carCurrent();
+  $('carQuote').textContent = c.detail ? `Quote (${c.detail==='FullDetail'?'Full Detail':c.detail}): $${c.total}` : 'Select Interior and/or Exterior';
+}
+function addCarService(){
+  const c = carCurrent();
+  if(!c.detail){ toast("Pick Interior and/or Exterior"); return; }
+  services.push({type:'Car', subtype:carSub, detail:c.detail, addons:c.addons, price:c.total});
+  renderServices(); show('servicePage');
+}
+
+function startBoat(){
+  $('boatLen').value=''; $('boatInt').checked=false; $('boatExt').checked=false; $('boatPol').checked=false;
+  const wrap=$('boatAddons'); wrap.innerHTML='';
+  Object.entries(BOAT_ADDONS).forEach(([name,price])=>{
+    const l=document.createElement('label'); l.className='chk';
+    l.innerHTML = `<input type="checkbox" data-addon="${name}" data-price="${price}" onchange="updateBoatQuote()"> ${name} <span class="price">$${price}</span>`;
+    wrap.appendChild(l);
+  });
+  updateBoatQuote(); show('boatPage');
+}
+function boatCurrent(){
+  const len=+val('boatLen')||0, i=$('boatInt').checked, e=$('boatExt').checked, p=$('boatPol').checked;
+  const perFoot = getBoatPricePerFoot(i,e,p);
+  const addons=[...document.querySelectorAll('#boatAddons input:checked')].map(c=>({name:c.dataset.addon, price:+c.dataset.price}));
+  const addonsTotal = addons.reduce((s,a)=>s+a.price,0);
+  return {len, perFoot, addons, base:perFoot*len, total: perFoot*len + addonsTotal, i,e,p};
+}
+function updateBoatQuote(){
+  const b=boatCurrent();
+  $('boatQuote').textContent = (b.len&&b.perFoot) ? `Quote: $${b.total} ($${b.perFoot}/ft × ${b.len}ft${b.addons.length?` + add-ons`:''})` : '';
+}
+function addBoatService(){
+  const b=boatCurrent();
+  if(!b.len||!b.perFoot){ toast("Enter length and select services"); return; }
+  const combo=[b.i&&'Interior',b.e&&'Exterior',b.p&&'Polish'].filter(Boolean).join('+');
+  services.push({type:'Boat', subtype:`${b.len} ft`, detail:combo, addons:b.addons, price:b.total, boat_length:b.len});
+  renderServices(); show('servicePage');
+}
+
+function startOther(){ $('otherDesc').value=''; $('otherPrice').value=''; show('otherPage'); }
+function addOtherService(){
+  const d=val('otherDesc'), p=+val('otherPrice');
+  if(!d||!p){ toast("Description and price required"); return; }
+  services.push({type:'Other', subtype:d, detail:'', addons:[], price:p});
+  renderServices(); show('servicePage');
+}
+
+function svcLabel(s){
+  const add = s.addons.length ? ' + ' + s.addons.map(a=>`${a.name} $${a.price}`).join(', ') : '';
+  const det = s.detail==='FullDetail' ? 'Full Detail' : s.detail;
+  return `${s.subtype}${s.type==='Car'?'':' '+(s.type==='Boat'?'Boat':'')} (${det||s.type})${add}: $${s.price}`;
+}
+function renderServices(){
+  const w=$('serviceList'); w.innerHTML='';
+  services.forEach((s,idx)=>{
+    const d=document.createElement('div'); d.className='svc-item';
+    d.innerHTML = `${svcLabel(s)} <a style="color:var(--red);float:right" onclick="services.splice(${idx},1);renderServices()">✕</a>`;
+    w.appendChild(d);
+  });
+}
+
+/* ================= RECEIPT / SAVE ================= */
+function subtotal(){ return services.reduce((s,x)=>s+x.price,0); }
+function grandTotal(){ return Math.round(subtotal()*(1-discountPct/100)); }
+function renderReceipt(){
+  const w=$('receiptList'); w.innerHTML='';
+  services.forEach(s=>{ const d=document.createElement('div'); d.className='svc-item'; d.textContent=svcLabel(s); w.appendChild(d); });
+  $('receiptTotals').innerHTML = discountPct
+    ? `Subtotal: $${subtotal()}<br>Discount: ${discountPct}%<br><span class="grand">Total: $${grandTotal()}</span>`
+    : `<span class="grand">Total: $${subtotal()}</span>`;
+}
+function addDiscount(){
+  const d=prompt("Discount percent:", discountPct||"");
+  if(d!==null){ discountPct=Math.max(0,Math.min(100,+d||0)); renderReceipt(); }
+}
+
+function contactRow(id){
+  return { id, first_name:val('firstName'), last_name:val('lastName'), phone:val('phone')||null, email:val('email')||null, address:val('address')||null, rep:localStorage.getItem('lsd_rep')||null, source:'d2d_app' };
+}
+async function saveQuote(scheduledAt){
+  if(!val('firstName')){ toast("Contact first name required"); show('contactPage'); return; }
+  if(!services.length){ toast("Add at least one service"); return; }
+  const contactId = crypto.randomUUID();
+  const payload = {
+    contact: contactRow(contactId),
+    quote: { contact_id:contactId, services, subtotal:subtotal(), discount_pct:discountPct, total:grandTotal(),
+             status: scheduledAt ? 'scheduled':'quote', scheduled_at:scheduledAt, rep:localStorage.getItem('lsd_rep')||null, source:'d2d_app' }
+  };
+  try {
+    await sbInsert('contacts', payload.contact);
+    await sbInsert('quotes', payload.quote);
+    toast(scheduledAt ? "✅ Scheduled & saved to database" : "✅ Quote saved to database");
+    flushQueue();
+  } catch(err){
+    queue(payload); toast("📡 Offline — saved locally, will sync automatically");
+  }
+}
+function scheduleQuote(){
+  const d = prompt("Service date/time (e.g. 2026-08-14 10:00):");
+  if(!d) return;
+  const ts = new Date(d.replace(' ','T'));
+  if(isNaN(ts)){ toast("Couldn't read that date"); return; }
+  saveQuote(ts.toISOString());
+}
+
+/* offline queue */
+function queue(p){ const q=JSON.parse(localStorage.getItem('lsd_queue')||'[]'); q.push(p); localStorage.setItem('lsd_queue', JSON.stringify(q)); updateBadge(); }
+async function flushQueue(){
+  const q=JSON.parse(localStorage.getItem('lsd_queue')||'[]');
+  if(!q.length){ updateBadge(); return; }
+  const remaining=[];
+  for(const p of q){
+    try { await sbInsert('contacts', p.contact); await sbInsert('quotes', p.quote); }
+    catch(e){ remaining.push(p); }
+  }
+  localStorage.setItem('lsd_queue', JSON.stringify(remaining));
+  if(q.length && !remaining.length) toast("✅ Offline entries synced");
+  updateBadge();
+}
+function updateBadge(){ const n=JSON.parse(localStorage.getItem('lsd_queue')||'[]').length; $('netBadge').textContent = n? n+' pending sync':''; }
+window.addEventListener('online', flushQueue);
+flushQueue();
+
+/* vCard */
+function saveVcard(){
+  if(!val('firstName')){ toast("Enter a name first"); return; }
+  const v=`BEGIN:VCARD\nVERSION:3.0\nN:${val('lastName')};${val('firstName')};;;\nFN:${val('firstName')} ${val('lastName')}\nTEL:${val('phone')}\nEMAIL:${val('email')}\nADR:;;${val('address')};;;;\nEND:VCARD`;
+  const a=document.createElement('a');
+  a.href='data:text/vcard;charset=utf-8,'+encodeURIComponent(v);
+  a.download=`${val('firstName')}_${val('lastName')||'contact'}.vcf`; a.click();
+}
+function resetAll(){
+  if(!confirm("Clear everything?")) return;
+  services=[]; discountPct=0;
+  ['firstName','lastName','phone','email','address'].forEach(id=>$(id).value='');
+  renderServices(); show('contactPage');
+}
+</script>
+</body>
+</html>
