@@ -128,7 +128,7 @@
 const CAR_PRICES = {"Coupe":{"Interior":189,"Exterior":189,"FullDetail":229},"Sedan":{"Interior":189,"Exterior":189,"FullDetail":249},"Small SUV":{"Interior":189,"Exterior":189,"FullDetail":279},"SUV":{"Interior":189,"Exterior":189,"FullDetail":299},"Small Truck":{"Interior":189,"Exterior":189,"FullDetail":299},"Truck":{"Interior":189,"Exterior":189,"FullDetail":349},"Van":{"Interior":189,"Exterior":189,"FullDetail":349}};
 const CAR_ADDONS = {"Under Carriage":50,"Leather Conditioner":50,"Pet Hair":50,"Carpet/Seat Extraction":100,"Stain Removal":50,"Polish":150};
 const BOAT_ADDONS = {"Leather Conditioner":50,"Chrome Polish":75,"Stain Removal":50,"Pet Hair":50};
-const BOAT_PRICE_RATES = {"exterior":20,"interior":20,"exterior+interior":25,"exterior+polish":34,"exterior+interior+polish":34};
+const BOAT_PRICE_RATES = {"exterior":20,"interior":20,"exterior+interior":25,"exterior+polish":30,"exterior+interior+polish":34};
 function getBoatPricePerFoot(i,e,p){ if(e&&i&&p) return BOAT_PRICE_RATES['exterior+interior+polish']; if(e&&p) return BOAT_PRICE_RATES['exterior+polish']; if(e&&i) return BOAT_PRICE_RATES['exterior+interior']; if(e) return BOAT_PRICE_RATES['exterior']; if(i) return BOAT_PRICE_RATES['interior']; return 0; }
 
 /* ================= SUPABASE ================= */
