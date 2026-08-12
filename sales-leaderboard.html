@@ -1,0 +1,1525 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Lake Side Detailing — Live Sales Leaderboard</title>
+<style>
+/* ============================================================
+   LAKE SIDE DETAILING — LIVE SALES LEADERBOARD
+   Self-contained. No external dependencies. Works from file://
+   ============================================================ */
+:root{
+  --bg:#070b10;
+  --bg-2:#0d141d;
+  --panel:#111a25;
+  --panel-2:#16212f;
+  --line:#1e2c3d;
+  --line-2:#2a3d54;
+  --txt:#e8f1f8;
+  --txt-dim:#8ba1b8;
+  --txt-faint:#5c728a;
+  --teal:#14b8a6;
+  --teal-2:#2dd4bf;
+  --teal-dim:#0f766e;
+  --gold:#f0b429;
+  --silver:#b8c6d4;
+  --bronze:#c97b3c;
+  --good:#34d399;
+  --warn:#fbbf24;
+  --bad:#f87171;
+  --r:14px;
+  --shadow:0 10px 40px rgba(0,0,0,.5);
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{
+  background:
+    radial-gradient(1200px 700px at 85% -10%, rgba(20,184,166,.13), transparent 60%),
+    radial-gradient(900px 600px at 5% 105%, rgba(20,184,166,.07), transparent 60%),
+    var(--bg);
+  color:var(--txt);
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Inter,Roboto,Helvetica,Arial,sans-serif;
+  font-variant-numeric:tabular-nums;
+  -webkit-font-smoothing:antialiased;
+  min-height:100vh;
+  padding:clamp(14px,2vw,30px);
+  overflow-x:hidden;
+}
+.wrap{max-width:1600px;margin:0 auto}
+
+/* ---------- header ---------- */
+header{
+  display:flex;align-items:center;gap:20px;flex-wrap:wrap;
+  padding-bottom:18px;margin-bottom:20px;
+  border-bottom:1px solid var(--line);
+}
+.brand{display:flex;align-items:center;gap:14px;margin-right:auto}
+.logo{
+  width:52px;height:52px;border-radius:13px;flex:none;
+  background:linear-gradient(140deg,var(--teal-2),var(--teal-dim));
+  display:grid;place-items:center;font-weight:800;font-size:19px;color:#04231f;
+  box-shadow:0 6px 22px rgba(20,184,166,.35);
+}
+h1{font-size:clamp(19px,2.3vw,29px);margin:0;letter-spacing:-.02em;font-weight:750;line-height:1.1}
+.sub{color:var(--txt-dim);font-size:13px;margin-top:3px;letter-spacing:.02em}
+
+.live{
+  display:flex;align-items:center;gap:9px;
+  background:rgba(20,184,166,.1);border:1px solid rgba(20,184,166,.32);
+  padding:8px 15px;border-radius:999px;font-size:12.5px;font-weight:650;
+  color:var(--teal-2);letter-spacing:.06em;text-transform:uppercase;white-space:nowrap;
+}
+.live.stale{background:rgba(251,191,36,.1);border-color:rgba(251,191,36,.35);color:var(--warn)}
+.live.err{background:rgba(248,113,113,.1);border-color:rgba(248,113,113,.35);color:var(--bad)}
+.dot{width:8px;height:8px;border-radius:50%;background:currentColor;animation:pulse 1.9s ease-in-out infinite}
+@keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.3;transform:scale(.75)}}
+.clock{font-size:13px;color:var(--txt-faint);white-space:nowrap}
+
+/* ---------- buttons ---------- */
+.btn{
+  background:var(--panel);border:1px solid var(--line-2);color:var(--txt-dim);
+  padding:8px 15px;border-radius:9px;font-size:13px;font-weight:600;cursor:pointer;
+  font-family:inherit;transition:.15s;white-space:nowrap;
+}
+.btn:hover{background:var(--panel-2);color:var(--txt);border-color:var(--teal-dim)}
+.btn.on{background:rgba(20,184,166,.16);border-color:var(--teal);color:var(--teal-2)}
+.seg{display:flex;gap:7px;flex-wrap:wrap}
+
+/* ---------- notice ---------- */
+.notice{
+  background:linear-gradient(90deg,rgba(251,191,36,.09),rgba(251,191,36,.02));
+  border:1px solid rgba(251,191,36,.3);border-left:4px solid var(--warn);
+  border-radius:var(--r);padding:16px 20px;margin-bottom:20px;font-size:13.5px;line-height:1.65;
+}
+.notice b{color:var(--warn)}
+.notice code{
+  background:rgba(0,0,0,.4);padding:2px 7px;border-radius:5px;
+  font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12.5px;color:var(--teal-2)
+}
+.notice ol{margin:9px 0 0;padding-left:20px}
+.notice li{margin:4px 0}
+.notice.hide{display:none}
+
+/* ---------- KPI row ---------- */
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:14px;margin-bottom:22px}
+.kpi{
+  background:linear-gradient(160deg,var(--panel),var(--bg-2));
+  border:1px solid var(--line);border-radius:var(--r);padding:18px 20px;position:relative;overflow:hidden;
+}
+.kpi::after{content:"";position:absolute;inset:0 auto auto 0;width:3px;height:100%;background:var(--teal);opacity:.55}
+.kpi .lbl{font-size:11px;text-transform:uppercase;letter-spacing:.11em;color:var(--txt-faint);font-weight:700}
+.kpi .val{font-size:clamp(27px,3.3vw,40px);font-weight:780;letter-spacing:-.03em;margin-top:7px;line-height:1}
+.kpi .meta{font-size:12px;color:var(--txt-dim);margin-top:7px}
+.kpi.accent .val{color:var(--teal-2)}
+.kpi.gold::after{background:var(--gold)}
+.kpi.gold .val{color:var(--gold)}
+
+/* ---------- layout ---------- */
+.grid{display:grid;grid-template-columns:1.55fr 1fr;gap:20px;align-items:start}
+@media(max-width:1080px){.grid{grid-template-columns:1fr}}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);overflow:hidden;box-shadow:var(--shadow)}
+.card-h{
+  padding:15px 20px;border-bottom:1px solid var(--line);
+  display:flex;align-items:center;gap:12px;background:rgba(255,255,255,.015)
+}
+.card-h h2{margin:0;font-size:14px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--txt-dim)}
+.card-h .count{margin-left:auto;font-size:12px;color:var(--txt-faint)}
+
+/* ---------- podium ---------- */
+.podium{display:grid;grid-template-columns:repeat(3,1fr);gap:13px;padding:20px}
+@media(max-width:640px){.podium{grid-template-columns:1fr}}
+.pod{
+  background:linear-gradient(165deg,var(--panel-2),var(--bg-2));
+  border:1px solid var(--line-2);border-radius:12px;padding:19px 17px;text-align:center;position:relative;
+  transition:.2s;
+}
+.pod.r1{border-color:rgba(240,180,41,.5);background:linear-gradient(165deg,rgba(240,180,41,.11),var(--bg-2))}
+.pod.r2{border-color:rgba(184,198,212,.32)}
+.pod.r3{border-color:rgba(201,123,60,.32)}
+.medal{font-size:27px;line-height:1}
+.pod .nm{font-weight:730;font-size:16px;margin-top:9px;letter-spacing:-.01em;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pod .deals{font-size:clamp(26px,3vw,36px);font-weight:800;margin-top:8px;line-height:1;letter-spacing:-.03em}
+.pod.r1 .deals{color:var(--gold)}
+.pod.r2 .deals{color:var(--silver)}
+.pod.r3 .deals{color:var(--bronze)}
+.pod .dl{font-size:10.5px;text-transform:uppercase;letter-spacing:.1em;color:var(--txt-faint);margin-top:5px;font-weight:700}
+.pod .rev{font-size:13px;color:var(--txt-dim);margin-top:9px;padding-top:9px;border-top:1px solid var(--line)}
+
+/* ---------- table ---------- */
+table{width:100%;border-collapse:collapse;font-size:14px}
+th{
+  text-align:left;padding:10px 20px;font-size:10.5px;text-transform:uppercase;letter-spacing:.1em;
+  color:var(--txt-faint);font-weight:700;border-bottom:1px solid var(--line);white-space:nowrap
+}
+td{padding:13px 20px;border-bottom:1px solid rgba(30,44,61,.55);vertical-align:middle}
+tbody tr:last-child td{border-bottom:none}
+tbody tr{transition:background .15s}
+tbody tr:hover{background:rgba(20,184,166,.045)}
+.num{text-align:right;font-variant-numeric:tabular-nums}
+.rank{width:44px;color:var(--txt-faint);font-weight:750;font-size:15px}
+.rank.top{color:var(--gold)}
+.who{display:flex;align-items:center;gap:11px;min-width:0}
+.av{
+  width:33px;height:33px;border-radius:9px;flex:none;display:grid;place-items:center;
+  font-size:12.5px;font-weight:750;color:#04231f;letter-spacing:.02em
+}
+.who .n{font-weight:640;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.bar{height:7px;border-radius:4px;background:rgba(255,255,255,.06);overflow:hidden;min-width:60px}
+.bar i{display:block;height:100%;border-radius:4px;background:linear-gradient(90deg,var(--teal-dim),var(--teal-2));transition:width .6s cubic-bezier(.22,1,.36,1)}
+.big{font-weight:750;font-size:16px}
+
+/* ---------- funnel ---------- */
+.funnel{padding:18px 20px}
+.fstep{margin-bottom:15px}
+.fstep:last-child{margin-bottom:0}
+.frow{display:flex;align-items:baseline;gap:10px;margin-bottom:7px}
+.frow .fn{font-size:13px;font-weight:650}
+.frow .fv{margin-left:auto;font-size:16px;font-weight:750}
+.frow .fp{font-size:11.5px;color:var(--txt-faint);font-weight:600}
+.ftrack{height:11px;border-radius:6px;background:rgba(255,255,255,.05);overflow:hidden}
+.ftrack i{display:block;height:100%;border-radius:6px;transition:width .7s cubic-bezier(.22,1,.36,1)}
+
+/* ---------- recent feed ---------- */
+.feed{max-height:420px;overflow-y:auto}
+.feed::-webkit-scrollbar{width:8px}
+.feed::-webkit-scrollbar-thumb{background:var(--line-2);border-radius:4px}
+.fitem{padding:12px 20px;border-bottom:1px solid rgba(30,44,61,.55);display:flex;gap:11px;align-items:center}
+.fitem:last-child{border-bottom:none}
+.fitem .t{margin-left:auto;font-size:11.5px;color:var(--txt-faint);white-space:nowrap}
+.fitem .c{font-size:13.5px;font-weight:620;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.fitem .s{font-size:11.5px;color:var(--txt-dim);margin-top:2px}
+.fresh{animation:flashIn 2.2s ease-out}
+@keyframes flashIn{0%{background:rgba(20,184,166,.3)}100%{background:transparent}}
+
+/* ---------- toast ---------- */
+#toast{
+  position:fixed;right:24px;bottom:24px;z-index:99;display:flex;flex-direction:column;gap:10px;
+  align-items:flex-end;pointer-events:none
+}
+.tt{
+  background:linear-gradient(135deg,var(--teal),var(--teal-dim));color:#03211d;
+  padding:14px 22px;border-radius:12px;font-weight:750;font-size:15px;
+  box-shadow:0 12px 40px rgba(20,184,166,.45);animation:slideUp .45s cubic-bezier(.22,1,.36,1)
+}
+.tt small{display:block;font-weight:600;opacity:.75;font-size:12px;margin-top:2px}
+@keyframes slideUp{from{transform:translateY(24px);opacity:0}to{transform:translateY(0);opacity:1}}
+
+/* ---------- awards ---------- */
+.awards{padding:14px 16px;display:grid;gap:11px}
+.award{
+  display:flex;align-items:center;gap:13px;padding:13px 15px;border-radius:11px;
+  background:linear-gradient(120deg,var(--panel-2),var(--bg-2));
+  border:1px solid var(--line-2);cursor:pointer;transition:.16s;text-align:left;
+  font-family:inherit;color:inherit;width:100%;
+}
+.award:hover{border-color:var(--teal);transform:translateY(-1px);
+  box-shadow:0 6px 20px rgba(20,184,166,.16)}
+.award .ico{font-size:22px;flex:none;width:34px;text-align:center}
+.award .mid{min-width:0;flex:1}
+.award .cat{font-size:10px;text-transform:uppercase;letter-spacing:.11em;
+  color:var(--txt-faint);font-weight:750}
+.award .who2{font-weight:700;font-size:15px;margin-top:3px;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.award .stat{font-size:12px;color:var(--teal-2);margin-top:2px;font-weight:600}
+.award .dl2{font-size:10px;color:var(--txt-faint);opacity:0;transition:.16s;
+  flex:none;font-weight:700;letter-spacing:.06em;text-transform:uppercase}
+.award:hover .dl2{opacity:1}
+.award.none{opacity:.45;cursor:default}
+.award.none:hover{transform:none;border-color:var(--line-2);box-shadow:none}
+.award.none .dl2{display:none}
+
+/* ---------- calendar embed ---------- */
+#calWrap{padding:0 16px 14px;position:relative}
+#calWrap iframe{
+  width:100%;border:0;border-radius:11px;display:block;background:#fff;
+}
+/* Google's embed is light-only. Invert it so it sits in the dark board without
+   glaring. hue-rotate puts the event colours back near where they started. */
+#calWrap.dark iframe{filter:invert(.915) hue-rotate(185deg) saturate(.85) contrast(.95)}
+
+/* ---------- misc ---------- */
+.empty{padding:52px 24px;text-align:center;color:var(--txt-faint);font-size:14px;line-height:1.7}
+.empty b{display:block;color:var(--txt-dim);font-size:16px;margin-bottom:7px}
+footer{margin-top:26px;padding-top:16px;border-top:1px solid var(--line);
+  display:flex;gap:16px;flex-wrap:wrap;align-items:center;font-size:12px;color:var(--txt-faint)}
+footer .sp{margin-left:auto}
+#drop{position:fixed;inset:0;background:rgba(7,11,16,.93);z-index:100;display:none;
+  place-items:center;font-size:22px;font-weight:700;color:var(--teal-2);
+  border:3px dashed var(--teal);pointer-events:none}
+#drop.on{display:grid}
+.hint{font-size:11.5px;color:var(--txt-faint);padding:0 20px 16px;line-height:1.6}
+</style>
+</head>
+<body>
+
+<!-- =============================================================
+     CONFIG — EDIT THIS BLOCK ONLY
+     ============================================================= -->
+<script>
+const CONFIG = {
+
+  teamName: "Lake Side Detailing",
+
+  // ---- LIVE DATA SOURCE -------------------------------------------------
+  // Paste a PUBLISHED CSV URL here to make the board truly live.
+  // See SETUP.md in this folder for how to get one (2 minutes).
+  //   Google Sheets : File > Share > Publish to web > [sheet] + CSV
+  //   Excel/OneDrive: use the Google Sheets bridge described in SETUP.md
+  // Leave "" to use the manual .xlsx drag-and-drop mode instead.
+  csvUrl: "",
+
+  // ---- LIVE DATABASE (Supabase) — the D2D app + Slack agent write here.
+  // When set, this OVERRIDES csvUrl and the board is truly live: every quote
+  // saved in the door-to-door app appears on the next refresh. The key below
+  // is the public read key for the leaderboard_feed view only (rep, customer
+  // first name, service, price, status) — no phones, emails, or addresses.
+  supabase: {
+    url: "https://rduciwvhjhmnlgpjuqnx.supabase.co",
+    key: "sb_publishable_yFrlKZFZlL81uReddZ8pUQ_Ahjlwu1M",
+  },
+
+  // How often to re-pull the data source, in seconds. (300 = 5 minutes; the
+  // database read is tiny, so this can go as low as 30 for a shop TV.)
+  refreshSeconds: 300,
+
+  // Which tab of a multi-tab workbook to read. null = auto-pick the one that
+  // looks most like form responses (Tracker v2 has 7 tabs; "Form1" is the live one).
+  sheetName: null,
+
+  // ---- YOUR TEAM --------------------------------------------------------
+  // Everyone here always shows on the board, even at zero deals, so nobody
+  // silently disappears on a slow week. Names must match the form's options
+  // exactly. Leave the array empty to show only whoever appears in the data.
+  // NOTE: you have two Dannys. The form's "Sales Rep" options MUST use full
+  // names — if either one is ever logged as just "Danny", their deals land on
+  // a phantom sixth rep and neither man gets credit.
+  roster: [
+    "Jack Murphy",
+    "Will Hanley",
+    "Danny Dempsey",
+    "Winston Vassilos",
+    "Danny Cosgrove",
+  ],
+
+  // ---- AWARDS -----------------------------------------------------------
+  awards: {
+    // "Rookie of the Week": only reps whose FIRST EVER deal landed within
+    // this many days are eligible.
+    rookieWindowDays: 30,
+
+    // "Highest Close Rate": ignore anyone with fewer than this many decided
+    // (won + lost) deals, so a lucky 1-for-1 doesn't take the crown.
+    minDecidedForCloseRate: 3,
+
+    // "Biggest Hustle" — how to measure it. Change this one word to retune:
+    //   "bestDay"  = most deals closed in a single day  (a burst of effort)
+    //   "volume"   = most total submissions worked, won or lost
+    //   "biggest"  = single largest deal by dollar value
+    hustleMetric: "bestDay",
+  },
+
+  // ---- JOB SCHEDULE (Google Calendar) -----------------------------------
+  // ⚠️ PRIVACY: the embed code you copied out of Google contained FOUR calendars —
+  // your personal charliewillsey@gmail.com, your Family calendar, Lake Side
+  // Detailing, and US Holidays. This board is built to go on a shop TV, so only
+  // the Lake Side calendar is wired up here. Do not paste the multi-src embed
+  // back in unless you want the whole team reading your family's schedule.
+  calendar: {
+    enabled: true,
+    // The "Lake Side Detailing" calendar only.
+    id: "d28e2cc34c489fc9680918072891f4ffbde5e2d34d2797366eb16859b7e5b91c@group.calendar.google.com",
+    timeZone: "America/Chicago",
+    mode: "AGENDA",     // "AGENDA" (compact list) | "MONTH" | "WEEK"
+    darkFilter: true,   // invert the white Google embed to match the dark board
+    height: 420,
+  },
+
+  // ---- GOALS ------------------------------------------------------------
+  monthlyDealGoal: 50,       // team deals per month
+  monthlyRevenueGoal: 25000, // team revenue per month, in dollars
+
+  // ---- COLUMN MAPPING ---------------------------------------------------
+  // Leave as null to auto-detect. Override with an exact header string
+  // if auto-detection picks the wrong column.
+  columns: {
+    rep:      null,  // who closed the deal   e.g. "Sales Rep"
+    value:    null,  // deal size             e.g. "Estimated total cost"
+    status:   null,  // won / lost / pending  e.g. "Deal Status"
+    date:     null,  // when                  e.g. "Completion time"
+    customer: null,  // customer name         e.g. "Full name"
+  },
+
+  // Status values that count as a CLOSED / WON deal (case-insensitive).
+  // If your sheet has no status column, every row counts as a deal.
+  wonValues: ["won","closed","closed won","complete","completed","booked","paid","sold","yes","y","true"],
+  lostValues: ["lost","closed lost","dead","declined","no","cancelled","canceled"],
+
+  // ---- v2 FORM RULES ----------------------------------------------------
+  // Tracker v2 has no Won/Lost column. It has "Scheduled Date" and a 0-10
+  // "IF NOT SCHEDULED - liklihood..." score instead, so status is derived:
+  //   Scheduled Date filled            -> BOOKED (counts as a closed deal)
+  //   No date, likelihood >= hot       -> open, hot lead
+  //   No date, likelihood >  cold      -> open, warm lead
+  //   No date, likelihood <= cold      -> dead (counts as lost)
+  // This mirrors the dead / cold / warm / sold legend in your clientbook.
+  derive: {
+    enabled: true,
+    coldMax: 3,   // 0-3  = dead
+    hotMin: 7,    // 7-10 = hot
+  },
+};
+</script>
+
+<div id="drop">Drop your Sales Tracker .xlsx here</div>
+<div id="toast"></div>
+
+<div class="wrap">
+
+  <header>
+    <div class="brand">
+      <div class="logo">LSD</div>
+      <div>
+        <h1 id="title">Sales Leaderboard</h1>
+        <div class="sub" id="subtitle">Loading…</div>
+      </div>
+    </div>
+    <div class="live" id="status"><span class="dot"></span><span id="statusTxt">Connecting</span></div>
+    <div class="clock" id="clock"></div>
+  </header>
+
+  <div class="notice hide" id="notice"></div>
+
+  <div class="seg" style="margin-bottom:20px">
+    <button class="btn on" data-range="month">This Month</button>
+    <button class="btn" data-range="week">This Week</button>
+    <button class="btn" data-range="today">Today</button>
+    <button class="btn" data-range="all">All Time</button>
+    <span style="flex:1"></span>
+    <button class="btn" id="btnFile">Load .xlsx</button>
+    <button class="btn" id="btnDemo">Demo Data</button>
+    <button class="btn" id="btnFull">Fullscreen</button>
+    <input type="file" id="file" accept=".xlsx,.csv" hidden>
+  </div>
+
+  <div class="kpis" id="kpis"></div>
+
+  <div class="grid">
+    <div style="display:flex;flex-direction:column;gap:20px">
+      <div class="card">
+        <div class="card-h"><h2>Leaderboard</h2><span class="count" id="lbCount"></span></div>
+        <div id="podium"></div>
+        <div id="lbBody"></div>
+      </div>
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:20px">
+      <div class="card">
+        <div class="card-h"><h2>Recognition</h2><span class="count">tap to export</span></div>
+        <div id="awards" class="awards"></div>
+      </div>
+      <div class="card">
+        <div class="card-h"><h2>Funnel</h2></div>
+        <div id="funnel" class="funnel"></div>
+      </div>
+      <div class="card">
+        <div class="card-h"><h2>Latest Deals</h2><span class="count" id="feedCount"></span></div>
+        <div id="feed" class="feed"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card" id="calCard" style="margin-top:20px;display:none">
+    <div class="card-h">
+      <h2>Job Schedule</h2>
+      <span class="count" id="calSub"></span>
+      <div class="seg" style="margin-left:auto">
+        <button class="btn" data-calmode="AGENDA">Agenda</button>
+        <button class="btn" data-calmode="WEEK">Week</button>
+        <button class="btn" data-calmode="MONTH">Month</button>
+        <button class="btn" id="calOpen">Open in Google ↗</button>
+      </div>
+    </div>
+    <div id="calWrap"></div>
+    <div class="hint" id="calHint"></div>
+  </div>
+
+  <footer>
+    <span id="srcLabel">No source</span>
+    <span id="rowLabel"></span>
+    <span class="sp"></span>
+    <span id="nextLabel"></span>
+  </footer>
+</div>
+
+<script>
+/* =============================================================
+   1. UTILITIES
+   ============================================================= */
+const $ = s => document.querySelector(s);
+const el = (t,c,h) => { const n=document.createElement(t); if(c)n.className=c; if(h!==undefined)n.innerHTML=h; return n; };
+const esc = s => String(s??"").replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const money = n => "$" + Math.round(n).toLocaleString("en-US");
+const moneyShort = n => n>=1000 ? "$"+(n/1000).toFixed(n>=10000?0:1)+"k" : "$"+Math.round(n);
+
+function initials(name){
+  const p = String(name).trim().split(/\s+/).filter(Boolean);
+  return ((p[0]?.[0]||"?") + (p.length>1 ? p[p.length-1][0] : "")).toUpperCase();
+}
+function hueFor(name){
+  let h=0; for(const ch of String(name)) h=(h*31+ch.charCodeAt(0))>>>0;
+  return h%360;
+}
+function avatarStyle(name){
+  const h = hueFor(name);
+  return `background:linear-gradient(140deg,hsl(${h} 70% 62%),hsl(${(h+40)%360} 65% 45%))`;
+}
+function timeAgo(d){
+  if(!d) return "";
+  const s = (Date.now()-d.getTime())/1000;
+  if(s<60) return "just now";
+  if(s<3600) return Math.floor(s/60)+"m ago";
+  if(s<86400) return Math.floor(s/3600)+"h ago";
+  if(s<604800) return Math.floor(s/86400)+"d ago";
+  return d.toLocaleDateString("en-US",{month:"short",day:"numeric"});
+}
+
+/* Excel serial date -> JS Date (1900 system, with the Lotus leap-year quirk) */
+function excelSerialToDate(n){
+  const ms = Math.round((n - 25569) * 86400 * 1000);
+  return new Date(ms);
+}
+function parseDateCell(v){
+  if(v instanceof Date) return isNaN(v) ? null : v;
+  if(v===null||v===undefined||v==="") return null;
+  if(typeof v==="number" || /^\d+(\.\d+)?$/.test(String(v).trim())){
+    const n = Number(v);
+    if(n>20000 && n<80000) return excelSerialToDate(n); // plausible Excel serial
+  }
+  const d = new Date(String(v).replace(/\s+/," "));
+  return isNaN(d) ? null : d;
+}
+function parseMoney(v){
+  if(v===null||v===undefined) return 0;
+  if(typeof v==="number") return v;
+  // Take the FIRST number in the cell, not every digit in it. Stripping all
+  // non-digits would turn "220 + (plus $220 for friend's vehicle)" into
+  // 220220 — a real entry in the clientbook that would read as $220,220.
+  const m = String(v).replace(/,/g,"").match(/-?\d+(\.\d+)?/);
+  if(!m) return 0;
+  const n = parseFloat(m[0]);
+  return isNaN(n) ? 0 : n;
+}
+
+/* =============================================================
+   2. CSV PARSER (RFC-4180: quotes, escaped quotes, embedded newlines)
+   ============================================================= */
+function parseCSV(text){
+  text = text.replace(/^﻿/,"");
+  const rows=[]; let row=[], cur="", q=false;
+  for(let i=0;i<text.length;i++){
+    const c=text[i];
+    if(q){
+      if(c==='"'){ if(text[i+1]==='"'){cur+='"';i++;} else q=false; }
+      else cur+=c;
+    } else {
+      if(c==='"') q=true;
+      else if(c===","){ row.push(cur); cur=""; }
+      else if(c==="\n"){ row.push(cur); rows.push(row); row=[]; cur=""; }
+      else if(c==="\r"){ /* skip */ }
+      else cur+=c;
+    }
+  }
+  if(cur!==""||row.length){ row.push(cur); rows.push(row); }
+  return rows.filter(r=>r.some(c=>String(c).trim()!==""));
+}
+
+/* =============================================================
+   3. XLSX READER — pure browser, no libraries.
+      Unzips with DecompressionStream('deflate-raw'), then walks the XML.
+   ============================================================= */
+async function readXlsx(arrayBuffer){
+  const files = await unzip(new Uint8Array(arrayBuffer));
+  const dec = new TextDecoder();
+
+  // Excel writes these files with or without a namespace prefix (<row> vs <x:row>),
+  // so always match on local name only.
+  const tags = (node,name) => [...node.getElementsByTagNameNS("*",name)];
+
+  // shared strings
+  let shared = [];
+  if(files["xl/sharedStrings.xml"]){
+    const doc = new DOMParser().parseFromString(dec.decode(files["xl/sharedStrings.xml"]),"application/xml");
+    shared = tags(doc,"si").map(si => tags(si,"t").map(t=>t.textContent).join(""));
+  }
+
+  // Map sheet NAME -> file, via workbook.xml + its rels. Tracker v2 is a
+  // multi-tab workbook whose first sheet is a DASHBOARD of formulas — reading
+  // "the first worksheet" would return nothing usable, so every sheet is read
+  // and the best one is chosen in pickSheet().
+  const order = [];
+  if(files["xl/workbook.xml"] && files["xl/_rels/workbook.xml.rels"]){
+    const wb = new DOMParser().parseFromString(dec.decode(files["xl/workbook.xml"]),"application/xml");
+    const rl = new DOMParser().parseFromString(dec.decode(files["xl/_rels/workbook.xml.rels"]),"application/xml");
+    const relMap = {};
+    for(const r of tags(rl,"Relationship")) relMap[r.getAttribute("Id")] = r.getAttribute("Target");
+    for(const s of tags(wb,"sheet")){
+      const rid = s.getAttributeNS("http://schemas.openxmlformats.org/officeDocument/2006/relationships","id")
+               || s.getAttribute("r:id");
+      let t = relMap[rid] || "";
+      t = t.replace(/^\/?xl\//,"").replace(/^\//,"");
+      order.push({name:s.getAttribute("name"), path:"xl/"+t});
+    }
+  }
+  if(!order.length){
+    Object.keys(files).filter(n=>/^xl\/worksheets\/sheet\d+\.xml$/.test(n))
+      .sort((a,b)=>a.localeCompare(b,undefined,{numeric:true}))
+      .forEach((p,i)=>order.push({name:"Sheet"+(i+1), path:p}));
+  }
+
+  const sheets = [];
+  for(const s of order){
+    if(!files[s.path]) continue;
+    sheets.push({name:s.name, grid:readSheet(dec.decode(files[s.path]), shared, tags)});
+  }
+  if(!sheets.length) throw new Error("No worksheet found inside the .xlsx");
+  return sheets;
+}
+
+function readSheet(xml, shared, tags){
+  const doc = new DOMParser().parseFromString(xml,"application/xml");
+  const grid = [];
+  for(const r of tags(doc,"row")){
+    const cells = [];
+    for(const c of tags(r,"c")){
+      const ref = c.getAttribute("r") || "";
+      const col = colIndex(ref.replace(/\d+/g,""));
+      const t = c.getAttribute("t");
+      let val = "";
+      if(t==="inlineStr"){
+        val = tags(c,"t").map(n=>n.textContent).join("");
+      } else {
+        const v = tags(c,"v")[0];
+        if(v){
+          val = t==="s" ? (shared[parseInt(v.textContent,10)] ?? "") : v.textContent;
+        }
+      }
+      cells[col] = val;
+    }
+    for(let i=0;i<cells.length;i++) if(cells[i]===undefined) cells[i]="";
+    grid.push(cells);
+  }
+  return grid.filter(r=>r.some(c=>String(c).trim()!==""));
+}
+/* Choose which tab (and which row is the header) actually holds form data.
+   Tracker v2 ships six formula tabs plus "Form1"; DEALS puts its header on
+   row 5, not row 1. Both cases are handled by scoring every candidate. */
+function pickSheet(sheets){
+  const want = ["rep","value","date","customer","scheduled","likelihood"];
+  let best = null;
+  for(const s of sheets){
+    if(CONFIG.sheetName && s.name!==CONFIG.sheetName) continue;
+    const limit = Math.min(12, s.grid.length);
+    for(let i=0;i<limit;i++){
+      const header = (s.grid[i]||[]).map(x=>String(x||"").trim());
+      if(header.filter(Boolean).length < 3) continue;
+      const c = detectColumns(header);
+      let score = want.reduce((n,k)=> n + (c[k]>=0?1:0), 0);
+      // The live Microsoft Forms response tab is the one carrying these.
+      if(header.some(h=>/^(completion|start)\s*time$/i.test(h))) score += 4;
+      const dataRows = s.grid.length - i - 1;
+      if(score < 2 || dataRows < 1) continue;
+      const total = score*100 + Math.min(dataRows,200);
+      if(!best || total > best.total)
+        best = {name:s.name, grid:s.grid.slice(i), total, score, headerRow:i+1, dataRows};
+    }
+  }
+  if(best) return best;
+  const f = sheets[0];
+  return {name:f.name, grid:f.grid, score:0, headerRow:1, dataRows:Math.max(0,f.grid.length-1)};
+}
+
+function colIndex(letters){
+  let n=0;
+  for(const ch of letters) n = n*26 + (ch.charCodeAt(0)-64);
+  return n-1;
+}
+
+/* Minimal ZIP reader: central directory + deflate-raw inflate */
+async function unzip(buf){
+  const dv = new DataView(buf.buffer, buf.byteOffset, buf.byteLength);
+  // locate End Of Central Directory
+  let eocd=-1;
+  for(let i=buf.length-22; i>=0 && i>buf.length-65558; i--){
+    if(dv.getUint32(i,true)===0x06054b50){ eocd=i; break; }
+  }
+  if(eocd<0) throw new Error("Not a valid .xlsx (no ZIP end record)");
+  const count = dv.getUint16(eocd+10,true);
+  let p = dv.getUint32(eocd+16,true);
+
+  const out = {};
+  for(let i=0;i<count;i++){
+    if(dv.getUint32(p,true)!==0x02014b50) break;
+    const method   = dv.getUint16(p+10,true);
+    const compSize = dv.getUint32(p+20,true);
+    const nameLen  = dv.getUint16(p+28,true);
+    const extraLen = dv.getUint16(p+30,true);
+    const cmtLen   = dv.getUint16(p+32,true);
+    const localOff = dv.getUint32(p+42,true);
+    const name = new TextDecoder().decode(buf.subarray(p+46, p+46+nameLen));
+    p += 46 + nameLen + extraLen + cmtLen;
+
+    // jump to local header for the real data offset
+    if(dv.getUint32(localOff,true)!==0x04034b50) continue;
+    const lNameLen  = dv.getUint16(localOff+26,true);
+    const lExtraLen = dv.getUint16(localOff+28,true);
+    const start = localOff + 30 + lNameLen + lExtraLen;
+    const raw = buf.subarray(start, start+compSize);
+
+    if(method===0){ out[name] = raw; }
+    else if(method===8){ out[name] = await inflateRaw(raw); }
+  }
+  return out;
+}
+async function inflateRaw(bytes){
+  if(typeof DecompressionStream==="undefined")
+    throw new Error("This browser can't unzip .xlsx — use the published-CSV mode instead (see SETUP.md)");
+  const ds = new DecompressionStream("deflate-raw");
+  const stream = new Blob([bytes]).stream().pipeThrough(ds);
+  return new Uint8Array(await new Response(stream).arrayBuffer());
+}
+
+/* =============================================================
+   4. COLUMN DETECTION
+   ============================================================= */
+const PATTERNS = {
+  rep:      /^(sales\s*)?(rep|closer|agent|owner|detailer|technician|tech|employee|staff|team\s*member|assigned\s*to|who\s*(closed|sold|booked))/i,
+  repLoose: /(rep\b|closer|sold\s*by|closed\s*by|booked\s*by|team\s*member|assigned)/i,
+  value:    /(estimated\s*total\s*cost|deal\s*(value|size|amount)|total\s*(cost|price|value)|revenue|amount|price|\$)/i,
+  status:   /(status|stage|outcome|result|won\/lost|disposition)/i,
+  date:     /(completion\s*time|submitted|timestamp|date|start\s*time|created)/i,
+  customer: /(customer\s*name|full\s*name|customer|client|company|business)/i,
+  // v2 additions. Note "liklihood" — the form's own spelling — is matched too.
+  scheduled: /(scheduled\s*date|service\s*date|job\s*date|appointment)/i,
+  likelihood:/(lik\w*hood|how\s*likely|if\s*not\s*scheduled)/i,
+  vehicle:  /(vehicle|service\s*type|package)/i,
+};
+// headers that are form plumbing, never a rep
+const NOISE = /^(id|start time|completion time|last modified time|email\d*|address|zip|postal|phone|city|state|any special requests)/i;
+
+function detectColumns(headers){
+  const found = {rep:-1, value:-1, status:-1, date:-1, customer:-1,
+                 scheduled:-1, likelihood:-1, vehicle:-1};
+  const norm = headers.map(h=>String(h||"").trim());
+
+  const manual = (key)=>{
+    const want = CONFIG.columns[key];
+    if(!want) return -1;
+    const i = norm.findIndex(h=>h.toLowerCase()===String(want).toLowerCase());
+    return i;
+  };
+
+  for(const key of Object.keys(found)){
+    const m = manual(key);
+    if(m>=0){ found[key]=m; continue; }
+    // strict pass
+    let i = norm.findIndex(h=>!NOISE.test(h) && PATTERNS[key].test(h));
+    if(i<0 && key==="rep") i = norm.findIndex(h=>!NOISE.test(h) && PATTERNS.repLoose.test(h));
+    found[key]=i;
+  }
+
+  // date: prefer "Completion time" over "Start time"
+  const completion = norm.findIndex(h=>/completion\s*time/i.test(h));
+  if(completion>=0) found.date = completion;
+
+  // customer must not be the same column as rep
+  if(found.customer>=0 && found.customer===found.rep) found.customer=-1;
+
+  return found;
+}
+
+/* =============================================================
+   5. STATE
+   ============================================================= */
+const STATE = {
+  headers: [],
+  rows: [],          // array of objects: {rep,value,status,date,customer,raw}
+  cols: {},
+  source: "",
+  lastFetch: null,
+  lastError: null,
+  range: "month",
+  seenKeys: new Set(),
+  firstLoad: true,
+  timer: null,
+  countdown: 0,
+};
+
+function buildRows(grid){
+  if(!grid.length) return {headers:[],rows:[],cols:{}};
+  const headers = grid[0].map(h=>String(h||"").trim());
+  const cols = detectColumns(headers);
+  const rows = grid.slice(1).map((r,idx)=>{
+    const get = i => i>=0 ? (r[i] ?? "") : "";
+    let statusRaw = String(get(cols.status)).trim();
+    const s = statusRaw.toLowerCase();
+    const schedRaw = String(get(cols.scheduled)).trim();
+    const scheduled = cols.scheduled>=0 ? parseDateCell(schedRaw) : null;
+    const likeRaw = String(get(cols.likelihood)).trim();
+    const likelihood = likeRaw==="" ? null : parseMoney(likeRaw);
+
+    let outcome = "open";
+    if(cols.status>=0){
+      if(CONFIG.wonValues.includes(s)) outcome="won";
+      else if(CONFIG.lostValues.includes(s)) outcome="lost";
+      else if(s==="") outcome="open";
+    } else if(CONFIG.derive.enabled && cols.scheduled>=0){
+      // v2: derive from Scheduled Date + likelihood score
+      if(scheduled || schedRaw!==""){ outcome="won"; statusRaw="Booked"; }
+      else if(likelihood===null){ outcome="open"; statusRaw="Lead"; }
+      else if(likelihood<=CONFIG.derive.coldMax){ outcome="lost"; statusRaw=`Dead (${likelihood}/10)`; }
+      else if(likelihood>=CONFIG.derive.hotMin){ outcome="open"; statusRaw=`Hot (${likelihood}/10)`; }
+      else { outcome="open"; statusRaw=`Warm (${likelihood}/10)`; }
+    } else {
+      outcome="won";                    // no status and no scheduled column -> every row is a deal
+    }
+    return {
+      rep: String(get(cols.rep)).trim() || "Unassigned",
+      value: parseMoney(get(cols.value)),
+      status: statusRaw,
+      outcome,
+      scheduled,
+      likelihood,
+      vehicle: String(get(cols.vehicle)).trim(),
+      date: parseDateCell(get(cols.date)),
+      customer: String(get(cols.customer)).trim() || "—",
+      key: (r.join("|")).slice(0,300) + "#" + idx,
+      raw: r,
+    };
+  });
+  return {headers, rows, cols};
+}
+
+/* =============================================================
+   6. FILTERING + AGGREGATION
+   ============================================================= */
+function rangeStart(range){
+  const n = new Date();
+  if(range==="today")  return new Date(n.getFullYear(),n.getMonth(),n.getDate());
+  if(range==="week"){
+    const d = new Date(n.getFullYear(),n.getMonth(),n.getDate());
+    d.setDate(d.getDate() - ((d.getDay()+6)%7)); // week starts Monday
+    return d;
+  }
+  if(range==="month") return new Date(n.getFullYear(),n.getMonth(),1);
+  return null;
+}
+function inRange(row, start){
+  if(!start) return true;
+  if(!row.date) return false;
+  return row.date >= start;
+}
+function aggregate(rows){
+  const by = new Map();
+  // seed the roster first so everyone appears, even with no deals this period
+  for(const name of (CONFIG.roster||[])){
+    if(name && String(name).trim()) by.set(name.trim(),{rep:name.trim(),deals:0,revenue:0,last:null});
+  }
+  for(const r of rows){
+    if(r.outcome!=="won") continue;
+    if(!by.has(r.rep)) by.set(r.rep,{rep:r.rep,deals:0,revenue:0,last:null});
+    const a = by.get(r.rep);
+    a.deals++; a.revenue += r.value;
+    if(r.date && (!a.last || r.date>a.last)) a.last = r.date;
+  }
+  return [...by.values()].sort((a,b)=> b.deals-a.deals || b.revenue-a.revenue || a.rep.localeCompare(b.rep));
+}
+
+/* =============================================================
+   6b. AWARDS — the recognition categories from the handoff doc.
+       Each returns {rep, stat, detail} or null if nobody qualifies.
+   ============================================================= */
+function prevWindow(range, start){
+  if(!start) return null;                       // "all time" has no previous period
+  const end = new Date(start);
+  const s = new Date(start);
+  if(range==="today")      s.setDate(s.getDate()-1);
+  else if(range==="week")  s.setDate(s.getDate()-7);
+  else if(range==="month") s.setMonth(s.getMonth()-1);
+  return {start:s, end};
+}
+function dayKey(d){ return d ? d.getFullYear()+"-"+d.getMonth()+"-"+d.getDate() : ""; }
+
+function computeAwards(scoped, board, range, start){
+  const A = CONFIG.awards;
+  const won = scoped.filter(r=>r.outcome==="won");
+  const out = {};
+
+  // --- Top Closer -------------------------------------------------------
+  out.top = board.length && board[0].deals>0
+    ? {rep:board[0].rep, stat:money(board[0].revenue),
+       detail:`${board[0].deals} deal${board[0].deals===1?"":"s"}`}
+    : null;
+
+  // --- Rookie of the Week ----------------------------------------------
+  // First-ever deal (across ALL data, not just this period) inside the window.
+  const firstEver = new Map();
+  for(const r of STATE.rows){
+    if(r.outcome!=="won" || !r.date) continue;
+    const cur = firstEver.get(r.rep);
+    if(!cur || r.date < cur) firstEver.set(r.rep, r.date);
+  }
+  const cutoff = new Date(Date.now() - A.rookieWindowDays*86400000);
+  const rookies = board.filter(b=>{
+    const f = firstEver.get(b.rep);
+    return b.deals>0 && f && f>=cutoff;
+  });
+  out.rookie = rookies.length
+    ? {rep:rookies[0].rep, stat:`${rookies[0].deals} deal${rookies[0].deals===1?"":"s"}`,
+       detail:money(rookies[0].revenue)}
+    : null;
+
+  // --- Most Improved ----------------------------------------------------
+  const pw = prevWindow(range, start);
+  out.improved = null;
+  if(pw){
+    const prev = new Map();
+    for(const r of STATE.rows){
+      if(r.outcome!=="won" || !r.date) continue;
+      if(r.date>=pw.start && r.date<pw.end) prev.set(r.rep,(prev.get(r.rep)||0)+1);
+    }
+    let best=null;
+    for(const b of board){
+      const before = prev.get(b.rep)||0;
+      const gain = b.deals - before;
+      if(gain>0 && (!best || gain>best.gain)) best={rep:b.rep, gain, before, now:b.deals};
+    }
+    if(best) out.improved = {rep:best.rep, stat:`+${best.gain} vs. last period`,
+      detail:`${best.before} → ${best.now} deals`};
+  }
+
+  // --- Biggest Hustle ---------------------------------------------------
+  out.hustle = null;
+  if(A.hustleMetric==="biggest"){
+    let best=null;
+    for(const r of won) if(r.value>0 && (!best || r.value>best.value)) best=r;
+    if(best) out.hustle = {rep:best.rep, stat:money(best.value), detail:"single largest deal"};
+  } else if(A.hustleMetric==="volume"){
+    const vol = new Map();
+    for(const r of scoped) vol.set(r.rep,(vol.get(r.rep)||0)+1);
+    let best=null;
+    for(const [rep,n] of vol) if(!best || n>best.n) best={rep,n};
+    if(best && best.n>0) out.hustle = {rep:best.rep, stat:`${best.n} worked`,
+      detail:"most opportunities worked"};
+  } else { // "bestDay" — most deals closed in a single day
+    const days = new Map();
+    for(const r of won){
+      if(!r.date) continue;
+      const k = r.rep+"|"+dayKey(r.date);
+      if(!days.has(k)) days.set(k,{rep:r.rep,date:r.date,n:0,rev:0});
+      const d=days.get(k); d.n++; d.rev+=r.value;
+    }
+    let best=null;
+    for(const d of days.values()) if(!best || d.n>best.n || (d.n===best.n && d.rev>best.rev)) best=d;
+    if(best && best.n>1) out.hustle = {rep:best.rep, stat:`${best.n} in one day`,
+      detail:best.date.toLocaleDateString("en-US",{month:"short",day:"numeric"})+" · "+money(best.rev)};
+  }
+
+  // --- Highest Close Rate ----------------------------------------------
+  out.closeRate = null;
+  if(STATE.cols.status >= 0){
+    const tally = new Map();
+    for(const r of scoped){
+      if(r.outcome==="open") continue;
+      if(!tally.has(r.rep)) tally.set(r.rep,{w:0,l:0});
+      const t=tally.get(r.rep);
+      r.outcome==="won" ? t.w++ : t.l++;
+    }
+    let best=null;
+    for(const [rep,t] of tally){
+      const decided = t.w+t.l;
+      if(decided < CONFIG.awards.minDecidedForCloseRate) continue;
+      const rate = t.w/decided;
+      if(!best || rate>best.rate) best={rep, rate, w:t.w, decided};
+    }
+    if(best) out.closeRate = {rep:best.rep, stat:Math.round(best.rate*100)+"% close rate",
+      detail:`${best.w} of ${best.decided} decided`};
+  }
+  return out;
+}
+
+const AWARD_META = {
+  top:       {ico:"🏆", cat:"Top Closer",         empty:"no deals yet"},
+  rookie:    {ico:"🌟", cat:"Rookie of the Week", empty:"no new reps in the last 30 days"},
+  improved:  {ico:"📈", cat:"Most Improved",      empty:"needs a previous period to compare"},
+  hustle:    {ico:"🔥", cat:"Biggest Hustle",     empty:"no multi-deal day yet"},
+  closeRate: {ico:"🎯", cat:"Highest Close Rate", empty:"needs a Deal Status column"},
+};
+
+function renderAwards(scoped, board){
+  const start = rangeStart(STATE.range);
+  const aw = computeAwards(scoped, board, STATE.range, start);
+  STATE.awards = aw;
+  $("#awards").innerHTML = Object.keys(AWARD_META).map(k=>{
+    const m = AWARD_META[k], a = aw[k];
+    if(!a) return `<div class="award none">
+        <div class="ico">${m.ico}</div>
+        <div class="mid"><div class="cat">${esc(m.cat)}</div>
+        <div class="who2" style="font-size:13px;color:var(--txt-faint);font-weight:600">${esc(m.empty)}</div></div>
+      </div>`;
+    return `<button class="award" data-award="${k}">
+        <div class="ico">${m.ico}</div>
+        <div class="mid">
+          <div class="cat">${esc(m.cat)}</div>
+          <div class="who2">${esc(a.rep)}</div>
+          <div class="stat">${esc(a.stat)} · ${esc(a.detail)}</div>
+        </div>
+        <div class="dl2">PNG ↓</div>
+      </button>`;
+  }).join("");
+
+  $("#awards").querySelectorAll("[data-award]").forEach(btn=>{
+    btn.onclick = ()=>{
+      const k = btn.dataset.award;
+      exportCard(AWARD_META[k].cat, STATE.awards[k]);
+    };
+  });
+}
+
+/* =============================================================
+   6c. RECOGNITION CARD — 1080x1080 PNG for Instagram.
+       Canvas only; no libraries, no network.
+   ============================================================= */
+function exportCard(category, a){
+  if(!a) return;
+  const S = 1080;
+  const cv = document.createElement("canvas");
+  cv.width = S; cv.height = S;
+  const x = cv.getContext("2d");
+
+  // background
+  const g = x.createLinearGradient(0,0,S,S);
+  g.addColorStop(0,"#0d2b2b"); g.addColorStop(.5,"#0a1620"); g.addColorStop(1,"#071016");
+  x.fillStyle = g; x.fillRect(0,0,S,S);
+
+  // teal glow
+  const glow = x.createRadialGradient(S*0.82,S*0.1,0,S*0.82,S*0.1,S*0.75);
+  glow.addColorStop(0,"rgba(20,184,166,.30)"); glow.addColorStop(1,"rgba(20,184,166,0)");
+  x.fillStyle = glow; x.fillRect(0,0,S,S);
+
+  // border
+  x.strokeStyle = "rgba(45,212,191,.42)"; x.lineWidth = 3;
+  x.strokeRect(44,44,S-88,S-88);
+
+  const F = (w,s) => `${w} ${s}px -apple-system, "Segoe UI", Helvetica, Arial, sans-serif`;
+  x.textAlign = "center";
+
+  // wordmark
+  x.fillStyle="rgba(232,241,248,.62)"; x.font=F(700,25);
+  x.letterSpacing = "7px";
+  x.fillText("LAKE SIDE DETAILING", S/2, 160);
+  x.letterSpacing = "0px";
+
+  // category
+  x.fillStyle="#2dd4bf"; x.font=F(800,33);
+  x.letterSpacing = "4px";
+  x.fillText(category.toUpperCase(), S/2, 336);
+  x.letterSpacing = "0px";
+
+  // rule
+  x.strokeStyle="rgba(45,212,191,.45)"; x.lineWidth=2;
+  x.beginPath(); x.moveTo(S/2-90,380); x.lineTo(S/2+90,380); x.stroke();
+
+  // name — shrink to fit
+  x.fillStyle="#ffffff";
+  let size = 104;
+  do { x.font = F(800, size); size -= 4; }
+  while (x.measureText(a.rep).width > S-190 && size > 40);
+  x.fillText(a.rep, S/2, 530);
+
+  // headline stat
+  x.fillStyle="#f0b429"; x.font=F(800,86);
+  let ss = 86;
+  do { x.font = F(800, ss); ss -= 3; }
+  while (x.measureText(a.stat).width > S-200 && ss > 34);
+  x.fillText(a.stat, S/2, 700);
+
+  // detail
+  x.fillStyle="rgba(232,241,248,.72)"; x.font=F(500,34);
+  x.fillText(a.detail, S/2, 768);
+
+  // period
+  const period = {today:"Today",week:"This Week",month:"This Month",all:"All Time"}[STATE.range];
+  x.fillStyle="rgba(139,161,184,.85)"; x.font=F(600,27);
+  x.letterSpacing = "3px";
+  x.fillText(period.toUpperCase() + " · " +
+    new Date().toLocaleDateString("en-US",{month:"long",day:"numeric",year:"numeric"}).toUpperCase(),
+    S/2, 900);
+  x.letterSpacing = "0px";
+
+  x.fillStyle="rgba(45,212,191,.55)"; x.font=F(600,24);
+  x.fillText("Fontana, WI · Lake Geneva", S/2, 952);
+
+  // download
+  cv.toBlob(b=>{
+    const url = URL.createObjectURL(b);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `lakeside-${category.toLowerCase().replace(/\s+/g,"-")}-${a.rep.toLowerCase().replace(/\s+/g,"-")}.png`;
+    link.click();
+    setTimeout(()=>URL.revokeObjectURL(url), 4000);
+  }, "image/png");
+}
+
+/* =============================================================
+   7. RENDER
+   ============================================================= */
+function render(){
+  const start = rangeStart(STATE.range);
+  const scoped = STATE.rows.filter(r=>inRange(r,start));
+  const won  = scoped.filter(r=>r.outcome==="won");
+  const lost = scoped.filter(r=>r.outcome==="lost");
+  const open = scoped.filter(r=>r.outcome==="open");
+  const board = aggregate(scoped);
+  const revenue = won.reduce((s,r)=>s+r.value,0);
+  const hasRep = STATE.cols.rep >= 0;
+
+  $("#title").textContent = CONFIG.teamName + " — Sales Leaderboard";
+  const rangeName = {today:"Today",week:"This Week",month:"This Month",all:"All Time"}[STATE.range];
+  $("#subtitle").textContent = rangeName + " · " + scoped.length + " submission" + (scoped.length===1?"":"s");
+
+  renderNotice(hasRep, scoped.length);
+  renderKPIs(won, revenue, board, scoped);
+  renderLeaderboard(board, hasRep);
+  renderAwards(scoped, board);
+  renderFunnel(scoped, open, won, lost);
+  renderFeed(scoped, hasRep);
+
+  $("#rowLabel").textContent = STATE.rows.length + " total rows · " +
+    (hasRep ? "rep: “"+STATE.headers[STATE.cols.rep]+"”" : "no rep column") +
+    (STATE.cols.value>=0 ? " · value: “"+STATE.headers[STATE.cols.value]+"”" : "");
+}
+
+function renderNotice(hasRep, n){
+  const box = $("#notice");
+  const msgs = [];
+  if(!hasRep){
+    msgs.push(`<b>⚠ Your form has no “who closed this deal” field</b> — so every submission is stacked under
+      <code>Unassigned</code> and there is nothing to rank yet.
+      <ol>
+        <li>Open your form → <b>Add new</b> → <b>Choice</b> question.</li>
+        <li>Title it <code>Sales Rep</code> and add one option per team member.</li>
+        <li>Mark it <b>Required</b>. New submissions will start populating this board automatically — no changes to this file needed.</li>
+      </ol>`);
+  }
+  const derived = STATE.cols.status < 0 && STATE.cols.scheduled >= 0 && CONFIG.derive.enabled;
+  if(derived){
+    msgs.push(`<b>Status is being derived, not read.</b> Tracker v2 has no Won/Lost column, so a filled
+      <code>Scheduled Date</code> counts as <b>booked</b>, and anything unscheduled is scored by the
+      0–10 likelihood question — <code>0–${CONFIG.derive.coldMax}</code> dead,
+      <code>${CONFIG.derive.coldMax+1}–${CONFIG.derive.hotMin-1}</code> warm,
+      <code>${CONFIG.derive.hotMin}–10</code> hot. Tune with <code>CONFIG.derive</code>.`);
+  } else if(STATE.cols.status < 0 && hasRep){
+    msgs.push(`<b>No status column found</b> — every submission is being counted as a won deal.
+      Add a <code>Deal Status</code> choice field (Won / Lost / Pending) to track close rate.`);
+  }
+  if(!CONFIG.csvUrl && !(CONFIG.supabase && CONFIG.supabase.url) && STATE.source!=="demo"){
+    msgs.push(`<b>Not live yet</b> — this board is reading a one-time file snapshot.
+      Follow <code>SETUP.md</code> in this folder to publish your sheet as a CSV and paste the link into
+      <code>CONFIG.csvUrl</code>. It will then refresh itself every ${CONFIG.refreshSeconds}s with no clicks.`);
+  }
+  if(!msgs.length){ box.className="notice hide"; return; }
+  box.className="notice";
+  box.innerHTML = msgs.join('<hr style="border:none;border-top:1px solid rgba(251,191,36,.2);margin:13px 0">');
+}
+
+function renderKPIs(won, revenue, board, scoped){
+  const goalPctD = CONFIG.monthlyDealGoal ? Math.min(100, won.length/CONFIG.monthlyDealGoal*100) : 0;
+  const goalPctR = CONFIG.monthlyRevenueGoal ? Math.min(100, revenue/CONFIG.monthlyRevenueGoal*100) : 0;
+  const leader = board[0];
+  const avg = won.length ? revenue/won.length : 0;
+  const isMonth = STATE.range==="month";
+
+  const cards = [
+    {lbl:"Deals Closed", val:won.length, meta: isMonth ? `${Math.round(goalPctD)}% of ${CONFIG.monthlyDealGoal} goal` : `${scoped.length} submissions`, cls:"accent"},
+    {lbl:"Revenue", val:money(revenue), meta: isMonth ? `${Math.round(goalPctR)}% of ${moneyShort(CONFIG.monthlyRevenueGoal)} goal` : "closed-won value", cls:""},
+    {lbl:"Avg Deal", val:money(avg), meta:"per closed deal", cls:""},
+    {lbl:"Current Leader", val: leader ? leader.rep.split(/\s+/)[0] : "—",
+      meta: leader ? `${leader.deals} deal${leader.deals===1?"":"s"} · ${money(leader.revenue)}` : "no deals yet", cls:"gold"},
+  ];
+  $("#kpis").innerHTML = cards.map(c=>`
+    <div class="kpi ${c.cls}">
+      <div class="lbl">${esc(c.lbl)}</div>
+      <div class="val">${esc(c.val)}</div>
+      <div class="meta">${esc(c.meta)}</div>
+    </div>`).join("");
+}
+
+function renderLeaderboard(board, hasRep){
+  $("#lbCount").textContent = board.length ? board.length+" on the board" : "";
+  const pod = $("#podium"), body = $("#lbBody");
+
+  if(!board.length){
+    pod.innerHTML="";
+    body.innerHTML = `<div class="empty"><b>No closed deals in this range</b>
+      Try “All Time”, or check that your date column is being read correctly.</div>`;
+    return;
+  }
+  if(!hasRep){
+    pod.innerHTML="";
+    body.innerHTML = `<div class="empty"><b>${board[0].deals} deal${board[0].deals===1?"":"s"} · ${money(board[0].revenue)}</b>
+      All submissions are unattributed. Add a <b>Sales Rep</b> field to your form and this
+      fills in with a real ranking automatically.</div>`;
+    return;
+  }
+
+  const medals = ["🥇","🥈","🥉"];
+  pod.className = "podium";
+  pod.innerHTML = board.slice(0,3).map((b,i)=>`
+    <div class="pod r${i+1}">
+      <div class="medal">${medals[i]}</div>
+      <div class="nm">${esc(b.rep)}</div>
+      <div class="deals">${b.deals}</div>
+      <div class="dl">Deal${b.deals===1?"":"s"}</div>
+      <div class="rev">${money(b.revenue)}</div>
+    </div>`).join("");
+
+  const rest = board.slice(3);
+  const max = board[0].deals || 1;
+  if(!rest.length){ body.innerHTML=""; return; }
+  body.innerHTML = `
+    <table>
+      <thead><tr>
+        <th class="rank">#</th><th>Rep</th><th class="num">Deals</th>
+        <th style="width:28%">Pace</th><th class="num">Revenue</th><th class="num">Last</th>
+      </tr></thead>
+      <tbody>${rest.map((b,i)=>`
+        <tr>
+          <td class="rank">${i+4}</td>
+          <td><div class="who">
+            <div class="av" style="${avatarStyle(b.rep)}">${esc(initials(b.rep))}</div>
+            <div class="n">${esc(b.rep)}</div>
+          </div></td>
+          <td class="num big">${b.deals}</td>
+          <td><div class="bar"><i style="width:${(b.deals/max*100).toFixed(1)}%"></i></div></td>
+          <td class="num">${money(b.revenue)}</td>
+          <td class="num" style="color:var(--txt-faint);font-size:12px">${esc(timeAgo(b.last))}</td>
+        </tr>`).join("")}
+      </tbody>
+    </table>`;
+}
+
+function renderFunnel(scoped, open, won, lost){
+  const total = scoped.length;
+  const closeRate = (won.length+lost.length) ? won.length/(won.length+lost.length)*100 : 0;
+  const derived = STATE.cols.status < 0 && STATE.cols.scheduled >= 0 && CONFIG.derive.enabled;
+  const hot  = open.filter(r=>r.likelihood!==null && r.likelihood>=CONFIG.derive.hotMin).length;
+  const warm = open.filter(r=>r.likelihood!==null && r.likelihood>CONFIG.derive.coldMax
+                                                  && r.likelihood<CONFIG.derive.hotMin).length;
+  const steps = derived ? [
+    {n:"Leads captured (form submissions)", v:total,       c:"linear-gradient(90deg,#3b82f6,#60a5fa)"},
+    {n:"Booked — scheduled date set",       v:won.length,  c:"linear-gradient(90deg,var(--teal-dim),var(--teal-2))"},
+    {n:`Hot — ${CONFIG.derive.hotMin}+ likely`,  v:hot,    c:"linear-gradient(90deg,#c2410c,#fb923c)"},
+    {n:"Warm — mid likelihood",             v:warm,        c:"linear-gradient(90deg,#f59e0b,#fbbf24)"},
+    {n:`Dead — ${CONFIG.derive.coldMax} or below`, v:lost.length, c:"linear-gradient(90deg,#991b1b,#f87171)"},
+  ] : [
+    {n:"Leads captured (form submissions)", v:total,       c:"linear-gradient(90deg,#3b82f6,#60a5fa)"},
+    {n:"In progress / pending",             v:open.length, c:"linear-gradient(90deg,#f59e0b,#fbbf24)"},
+    {n:"Closed won",                        v:won.length,  c:"linear-gradient(90deg,var(--teal-dim),var(--teal-2))"},
+    {n:"Closed lost",                       v:lost.length, c:"linear-gradient(90deg,#991b1b,#f87171)"},
+  ];
+  $("#funnel").innerHTML = steps.map(s=>`
+    <div class="fstep">
+      <div class="frow">
+        <span class="fn">${esc(s.n)}</span>
+        <span class="fv">${s.v}</span>
+        <span class="fp">${total?Math.round(s.v/total*100):0}%</span>
+      </div>
+      <div class="ftrack"><i style="width:${total? (s.v/total*100).toFixed(1):0}%;background:${s.c}"></i></div>
+    </div>`).join("") + `
+    <div class="fstep" style="margin-top:18px;padding-top:15px;border-top:1px solid var(--line)">
+      <div class="frow">
+        <span class="fn" style="color:var(--txt-dim)">Close rate</span>
+        <span class="fv" style="color:${closeRate>=50?'var(--good)':'var(--warn)'}">${closeRate.toFixed(0)}%</span>
+      </div>
+    </div>`;
+}
+
+function renderFeed(scoped, hasRep){
+  const list = [...scoped].sort((a,b)=>(b.date?.getTime()||0)-(a.date?.getTime()||0)).slice(0,25);
+  $("#feedCount").textContent = list.length ? "showing "+list.length : "";
+  if(!list.length){ $("#feed").innerHTML = `<div class="empty">Nothing yet in this range.</div>`; return; }
+  $("#feed").innerHTML = list.map(r=>{
+    const who = hasRep ? r.rep : (r.customer||"—");
+    const badge = r.outcome==="won" ? "var(--good)" : r.outcome==="lost" ? "var(--bad)" : "var(--warn)";
+    const isNew = !STATE.firstLoad && !STATE.seenKeys.has(r.key);
+    return `<div class="fitem ${isNew?'fresh':''}">
+      <div class="av" style="${avatarStyle(who)}">${esc(initials(who))}</div>
+      <div style="min-width:0">
+        <div class="c">${esc(r.customer)}</div>
+        <div class="s">${hasRep?esc(r.rep)+" · ":""}<span style="color:${badge}">${esc(r.status||"new lead")}</span>${r.value?" · "+money(r.value):""}</div>
+      </div>
+      <div class="t">${esc(timeAgo(r.date))}</div>
+    </div>`;
+  }).join("");
+}
+
+/* =============================================================
+   8. NEW-DEAL DETECTION + TOAST
+   ============================================================= */
+function checkNewDeals(){
+  if(STATE.firstLoad){
+    STATE.rows.forEach(r=>STATE.seenKeys.add(r.key));
+    STATE.firstLoad = false;
+    return;
+  }
+  const fresh = STATE.rows.filter(r=>!STATE.seenKeys.has(r.key));
+  fresh.forEach(r=>STATE.seenKeys.add(r.key));
+  const hasRep = STATE.cols.rep>=0;
+  fresh.slice(0,3).forEach(r=>{
+    toast(
+      (hasRep ? esc(r.rep)+" closed a deal!" : "New lead in!"),
+      esc(r.customer) + (r.value ? " · "+money(r.value) : "")
+    );
+  });
+}
+function toast(title, sub){
+  const t = el("div","tt",`${title}<small>${sub}</small>`);
+  $("#toast").appendChild(t);
+  setTimeout(()=>{ t.style.transition="opacity .4s"; t.style.opacity="0";
+    setTimeout(()=>t.remove(),400); }, 7000);
+}
+
+/* =============================================================
+   9. DATA LOADING
+   ============================================================= */
+function setStatus(kind, text){
+  const s = $("#status");
+  s.className = "live" + (kind==="ok"?"":" "+kind);
+  $("#statusTxt").textContent = text;
+}
+
+/* Live database mode: pull the leaderboard_feed view and hand it to the
+   existing pipeline as a synthetic sheet, so column detection, status
+   derivation, awards, and the feed all work unchanged. */
+async function loadFromSupabase(quiet){
+  const SB = CONFIG.supabase;
+  try{
+    if(!quiet) setStatus("ok","Fetching");
+    const res = await fetch(SB.url + "/rest/v1/leaderboard_feed?select=*&order=created_at.desc&limit=1000", {
+      cache:"no-store",
+      headers:{ apikey:SB.key, Authorization:"Bearer "+SB.key }
+    });
+    if(!res.ok) throw new Error("HTTP "+res.status);
+    const data = await res.json();
+    const grid = [["Completion time","Sales Rep","Customer Name","Vehicle Type","Price","Status","Scheduled Date"]];
+    for(const r of data){
+      grid.push([ r.created_at||"", r.rep||"", r.customer||"", r.vehicle||"",
+                  r.price!=null?String(r.price):"", r.status||"", r.scheduled_at||"" ]);
+    }
+    apply(grid, "live");
+    STATE.lastError = null;
+    setStatus("ok","Live · database");
+  }catch(e){
+    STATE.lastError = e.message;
+    setStatus("err","Offline — "+e.message.slice(0,44));
+    console.error(e);
+  }
+}
+
+async function loadFromUrl(url, quiet){
+  try{
+    if(!quiet) setStatus("ok","Fetching");
+    const bust = url + (url.includes("?")?"&":"?") + "_t=" + Date.now();
+    const res = await fetch(bust, {cache:"no-store"});
+    if(!res.ok) throw new Error("HTTP "+res.status);
+    const text = await res.text();
+    if(/^\s*</.test(text)) throw new Error("Got HTML, not CSV — re-check the publish link (it must end in output=csv)");
+    apply(parseCSV(text), "live");
+    STATE.lastError = null;
+    setStatus("ok","Live");
+  }catch(e){
+    STATE.lastError = e.message;
+    setStatus("err","Offline — "+e.message.slice(0,44));
+    console.error(e);
+  }
+}
+
+function apply(grid, source){
+  const built = buildRows(grid);
+  STATE.headers = built.headers;
+  STATE.rows    = built.rows;
+  STATE.cols    = built.cols;
+  STATE.source  = source;
+  STATE.lastFetch = new Date();
+  checkNewDeals();
+  render();
+  $("#srcLabel").textContent =
+    source==="live" ? ((CONFIG.supabase&&CONFIG.supabase.url)?"Live database feed (D2D app + Slack)":"Live CSV feed") :
+    source==="demo" ? "Demo data (not your real numbers)" : "File: "+source;
+}
+
+async function loadFile(f){
+  setStatus("ok","Reading "+f.name);
+  try{
+    if(/\.csv$/i.test(f.name)){
+      apply(parseCSV(await f.text()), f.name);
+    } else {
+      const sheets = await readXlsx(await f.arrayBuffer());
+      const pick = pickSheet(sheets);
+      STATE.sheetInfo = `${sheets.length} tab${sheets.length===1?"":"s"} · reading “${pick.name}”` +
+                        (pick.headerRow>1 ? ` (header on row ${pick.headerRow})` : "");
+      apply(pick.grid, f.name);
+    }
+    setStatus("stale","Snapshot");
+  }catch(e){
+    setStatus("err", e.message.slice(0,50));
+    console.error(e);
+  }
+}
+
+/* Demo data so the board is never blank while you set things up */
+function demoData(){
+  const reps = (CONFIG.roster && CONFIG.roster.length)
+    ? CONFIG.roster.slice()
+    : ["Charlie Willsey"];
+  // Mirrors the real Tracker v2 schema, plus the Sales Rep field that still
+  // needs adding to the form.
+  const veh=["26ft Boat","44 ft Boat","SUV","Small SUV","Sedan","Truck","Large SUV","Collector Car"];
+  const towns=["Fontana","Lake Geneva","Williams Bay","Walworth","Delavan"];
+  const rows=[["ID","Start time","Completion time","Sales Rep","Customer Name","Address",
+               "Phone","Email","Vehicle Type","Price","Scheduled Date",
+               "IF NOT SCHEDULED - What is liklihood that this customer schedules in the future?"]];
+  const now=Date.now();
+  for(let i=1;i<=64;i++){
+    const d=new Date(now - Math.random()*26*86400000);
+    const isBoat = i%7===0;
+    const price = isBoat ? 480+Math.floor(Math.random()*12)*35 : 120+Math.floor(Math.random()*14)*25;
+    const booked = Math.random()<0.6;
+    const sched = booked
+      ? new Date(d.getTime()+ (1+Math.floor(Math.random()*10))*86400000).toISOString().slice(0,10)
+      : "";
+    rows.push([ i, d.toISOString(), d.toISOString(),
+      reps[Math.floor(Math.random()*reps.length)],
+      ["Alex","Jamie","Riley","Casey","Morgan","Taylor","Quinn","Avery"][i%8]+" "+
+      ["Nguyen","Patel","Rivera","Olsen","Bauer","Kim","Hayes","Ford"][(i*3)%8],
+      towns[i%towns.length], "", "",
+      isBoat ? veh[i%2] : veh[2+(i%6)],
+      "$"+price, sched,
+      booked ? "" : String(Math.floor(Math.random()*11)) ]);
+  }
+  apply(rows,"demo");
+  setStatus("stale","Demo");
+}
+
+/* =============================================================
+   9b. JOB SCHEDULE — Google Calendar embed.
+       Embed only, deliberately. Google's .ics endpoint sends no
+       access-control-allow-origin header, so a browser page cannot fetch
+       calendar data directly — verified 2026-08-05. Feeding events into the
+       KPIs would require a server or a Sheets bridge; see SETUP.md.
+   ============================================================= */
+function renderCalendar(){
+  const C = CONFIG.calendar;
+  if(!C || !C.enabled || !C.id){ $("#calCard").style.display="none"; return; }
+  $("#calCard").style.display="";
+
+  const p = new URLSearchParams();
+  p.set("src", C.id);
+  p.set("ctz", C.timeZone || "America/Chicago");
+  p.set("mode", C.mode || "AGENDA");
+  p.set("showTitle","0"); p.set("showPrint","0"); p.set("showTabs","0");
+  p.set("showCalendars","0"); p.set("showTz","0"); p.set("wkst","1");
+  p.set("showNav","1"); p.set("showDate","1");
+
+  const wrap = $("#calWrap");
+  wrap.className = C.darkFilter ? "dark" : "";
+  wrap.innerHTML = `<iframe src="https://calendar.google.com/calendar/embed?${p}"
+      height="${C.height||420}" loading="lazy"
+      title="Lake Side Detailing job schedule"></iframe>`;
+
+  $("#calSub").textContent = "Lake Side Detailing calendar";
+  $("#calHint").innerHTML =
+    `Live from Google Calendar. Book jobs as <code>INITIALS: Customer — Service — $Price</code> ` +
+    `(e.g. <code>JM: Monty Enoch — Ultimate Detail — $650</code>) so the schedule stays readable ` +
+    `and matches the leaderboard. Two Dannys: <code>DD</code> = Dempsey, <code>DC</code> = Cosgrove.`;
+
+  document.querySelectorAll("[data-calmode]").forEach(b=>{
+    b.classList.toggle("on", b.dataset.calmode===(C.mode||"AGENDA"));
+    b.onclick = ()=>{ CONFIG.calendar.mode = b.dataset.calmode; renderCalendar(); };
+  });
+  $("#calOpen").onclick = ()=> window.open(
+    "https://calendar.google.com/calendar/u/0/r?cid="+encodeURIComponent(C.id), "_blank");
+}
+
+/* =============================================================
+   10. REFRESH LOOP + UI WIRING
+   ============================================================= */
+function startPolling(){
+  if(STATE.timer) clearInterval(STATE.timer);
+  const useDb = CONFIG.supabase && CONFIG.supabase.url && CONFIG.supabase.key;
+  if(!useDb && !CONFIG.csvUrl) { $("#nextLabel").textContent = "Auto-refresh off — no source set"; return; }
+  STATE.countdown = CONFIG.refreshSeconds;
+  STATE.timer = setInterval(()=>{
+    STATE.countdown--;
+    if(STATE.countdown<=0){
+      STATE.countdown = CONFIG.refreshSeconds;
+      useDb ? loadFromSupabase(true) : loadFromUrl(CONFIG.csvUrl, true);
+    }
+    $("#nextLabel").textContent = "Next refresh in "+STATE.countdown+"s";
+  },1000);
+}
+
+document.querySelectorAll("[data-range]").forEach(b=>{
+  b.onclick = ()=>{
+    document.querySelectorAll("[data-range]").forEach(x=>x.classList.remove("on"));
+    b.classList.add("on");
+    STATE.range = b.dataset.range;
+    render();
+  };
+});
+$("#btnFile").onclick = ()=>$("#file").click();
+$("#file").onchange = e => { if(e.target.files[0]) loadFile(e.target.files[0]); };
+$("#btnDemo").onclick = demoData;
+$("#btnFull").onclick = ()=> document.fullscreenElement
+  ? document.exitFullscreen() : document.documentElement.requestFullscreen();
+
+// drag & drop
+["dragenter","dragover"].forEach(ev=>document.addEventListener(ev,e=>{
+  e.preventDefault(); $("#drop").classList.add("on");
+}));
+["dragleave","drop"].forEach(ev=>document.addEventListener(ev,e=>{
+  e.preventDefault();
+  if(ev==="drop" || e.clientX<=0 || e.clientY<=0) $("#drop").classList.remove("on");
+}));
+document.addEventListener("drop",e=>{
+  const f = e.dataTransfer.files[0];
+  if(f) loadFile(f);
+});
+
+// clock
+setInterval(()=>{
+  const n=new Date();
+  $("#clock").textContent = n.toLocaleTimeString("en-US",{hour:"numeric",minute:"2-digit"}) +
+    (STATE.lastFetch ? " · updated "+timeAgo(STATE.lastFetch) : "");
+},1000);
+
+// boot
+(function boot(){
+  renderCalendar();
+  if(CONFIG.supabase && CONFIG.supabase.url && CONFIG.supabase.key){
+    loadFromSupabase();
+    startPolling();
+  } else if(CONFIG.csvUrl){
+    loadFromUrl(CONFIG.csvUrl);
+    startPolling();
+  } else {
+    setStatus("stale","Awaiting source");
+    $("#nextLabel").textContent = "Auto-refresh off — no csvUrl set";
+    demoData();
+  }
+})();
+</script>
+</body>
+</html>
